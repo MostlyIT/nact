@@ -3,7 +3,7 @@
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { SupervisionContext } from './actor';
-import { start, spawn, spawnStateless, dispatch, stop, query, milliseconds, ActorContext, applyOrThrowIfStopped } from './index';
+import { ActorContext, applyOrThrowIfStopped, dispatch, milliseconds, query, spawn, spawnStateless, start, stop } from './index';
 import { LocalActorRef, LocalActorSystemRef, nobody } from './references';
 
 chai.use(chaiAsPromised);
@@ -58,6 +58,17 @@ describe('LocalActorRef', function () {
     let grandchild = spawnStateless(child, ignore);
     child.path.system!.should.equal(system.path.system);
     grandchild.path.parts.slice(0, child.path.parts.length - 2).should.deep.equal(child.path.parts);
+  });
+
+  it('should be contravariant to message type', function () {
+    let actor: LocalActorRef<string | number> = spawnStateless(system, (_msg: string | number) => {});
+
+    let smallerActor: LocalActorRef<string> = actor;
+    dispatch(smallerActor, "a");
+
+    // @ts-expect-error
+    let biggerActor: LocalActorRef<string | number | symbol> = actor;
+    dispatch(biggerActor, "a");
   });
 });
 
