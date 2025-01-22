@@ -9,7 +9,7 @@ enum DispatchableMarker {
 }
 
 export type Dispatchable<Msg> =
-  { __dispatch__: DispatchableMarker, protocol: Msg } & Ref;
+  { __dispatch__: DispatchableMarker, protocol: (msg: Msg) => void } & Ref;
 
 enum StoppableMarker {
   _ = ""
