@@ -1,13 +1,13 @@
-import { ActorSystemRef, localActorRef, LocalActorRef, LocalActorSystemRef, localTemporaryRef } from "./references";
+import { Milliseconds } from ".";
+import assert from './assert';
 import { Deferral } from './deferral';
+import { ICanAssertNotStopped, ICanDispatch, ICanHandleFault, ICanManageTempReferences, ICanQuery, ICanReset, ICanStop, IHaveChildren, IHaveName, InferResponseFromMsgFactory, QueryMsgFactory } from "./interfaces";
+import { addMacrotask, clearMacrotask } from './macrotask';
+import { ActorPath } from "./paths";
+import { ActorSystemRef, localActorRef, LocalActorRef, LocalActorSystemRef, localTemporaryRef } from "./references";
+import { defaultSupervisionPolicy, SupervisionActions } from './supervision';
 import { applyOrThrowIfStopped, find } from './system-map';
 import Queue from './vendored/denque';
-import assert from './assert';
-import { defaultSupervisionPolicy, SupervisionActions } from './supervision';
-import { ActorPath } from "./paths";
-import { Milliseconds } from ".";
-import { addMacrotask, clearMacrotask } from './macrotask'
-import { ICanAssertNotStopped, ICanDispatch, ICanHandleFault, ICanManageTempReferences, ICanQuery, ICanReset, ICanStop, IHaveChildren, IHaveName, InferResponseFromMsgFactory, QueryMsgFactory } from "./interfaces";
 
 function unit(): void { };
 
@@ -360,17 +360,17 @@ export type ActorProps<State, Msg, ParentRef extends ActorSystemRef | LocalActor
   afterStop?: (state: State, ctx: ActorContext<Msg, ParentRef>) => void | Promise<void>
 };
 
-export type StatelessActorProps<ParentRef extends ActorSystemRef | LocalActorRef<any>> = {
+export type StatelessActorProps<Msg, ParentRef extends ActorSystemRef | LocalActorRef<any>> = {
   name?: string,
   shutdownAfter?: Milliseconds,
-  onCrash?: SupervisionActorFunc<InferMsgFromStatelessFunc<any>, ParentRef>,
+  onCrash?: SupervisionActorFunc<Msg, ParentRef>,
 };
 
 
 export function spawn<ParentRef extends LocalActorSystemRef | LocalActorRef<any>, Func extends ActorFunc<any, any, ParentRef>>(
   parent: ParentRef,
   f: Func,
-  properties?: ActorProps<InferStateFromFunc<Func>, InferMsgFromFunc<Func>, ParentRef> | StatelessActorProps<ParentRef>
+  properties?: ActorProps<InferStateFromFunc<Func>, InferMsgFromFunc<Func>, ParentRef> | StatelessActorProps<InferMsgFromFunc<Func>, ParentRef>
 ): LocalActorRef<InferMsgFromFunc<Func>> {
   return applyOrThrowIfStopped(
     parent,
@@ -390,7 +390,7 @@ const statelessSupervisionPolicy = (_: unknown, __: unknown, ctx: SupervisionCon
 export function spawnStateless<ParentRef extends LocalActorSystemRef | LocalActorRef<any>, Func extends StatelessActorFunc<any, ParentRef>>(
   parent: ParentRef,
   f: Func,
-  propertiesOrName?: StatelessActorProps<ParentRef>
+  propertiesOrName?: StatelessActorProps<InferMsgFromStatelessFunc<Func>, ParentRef>
 ): LocalActorRef<InferMsgFromStatelessFunc<Func>> {
   return spawn(
     parent,
